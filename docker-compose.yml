@@ -1,0 +1,96 @@
+services:
+
+  redis:
+    image: redis:7
+    container_name: notification-redis
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:17
+    container_name: notification-postgres
+    environment:
+      POSTGRES_USER: notification_user
+      POSTGRES_PASSWORD: notification_password
+      POSTGRES_DB: notification_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification_user -d notification_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: notification-api
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: notification_user
+      DB_PASSWORD: notification_password
+      DB_NAME: notification_db
+    
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  notification-worker:
+    build: .
+    container_name: notification-worker
+    command: node src/queue/notificationWorker.js
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: notification_user
+      DB_PASSWORD: notification_password
+      DB_NAME: notification_db
+
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  outbox-worker:
+    build: .
+    container_name: notification-outbox-worker
+    command: node src/workers/outboxWorker.js
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: notification_user
+      DB_PASSWORD: notification_password
+      DB_NAME: notification_db
+
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -1,10 +1,10 @@
 const rateLimiter = require("../services/rateLimiter");
-const { createNotificationJob, getStatus, getAllStatus, getQueueSize } = require("../services/notificationService");
+const notificationService = require("../services/notificationService");
 
-function createNotification(req, res) {
+async function createNotification(req, res) {
     const {userId, message, channel} = req.body;
 
-    if (!rateLimiter.isAllowed(userId)) {
+    if (!(await rateLimiter.isAllowed(userId))) {
         return res.status(429).json({
             error: "Rate limit exceed",
             message: "Maximum 5 notifications per user per minute",
@@ -13,7 +13,7 @@ function createNotification(req, res) {
         })
     }
 
-    const job = createNotificationJob({userId, message, channel});
+    const job = await notificationService.createNotificationJob({userId, message, channel});
 
     return res.status(202).json({
         jobId: job.jobId,
@@ -23,14 +23,20 @@ function createNotification(req, res) {
     })
 }
 
-function getNotificationStatus(req, res) {
-    const {userId} = req.query;
+async function getNotificationStatus(req, res) {
+    try {
+        const {userId} = req.query;
 
-    if (userId) {
-        return res.json({userId, ...getStatus(userId), rateLimitRemaining: rateLimiter.getRemainingRequests(userId)});
+        if (!userId) {
+            return res.status(400).json({error: "userId is required"});
+        }
+
+        const notifications = await notificationService.getStatus(userId)
+
+        return res.status(200).json({userId, notifications})
+    } catch (err) {
+        console.log("Error at getNotificationStatus controller ", err.message, err, );
     }
-
-    return res.json({queueSize: getQueueSize(), users: getAllStatus()})
 }
 
 module.exports = {

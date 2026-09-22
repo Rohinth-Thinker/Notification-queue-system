@@ -1,10 +1,12 @@
 
+const logger = require("../utils/logger");
+
 async function sleep(ms) {
     return await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function sendNotification(job) {
-    console.log(`[SEND] Job = ${job.jobId} | User=${job.userId} | Channel = ${job.channel} | Attempt = ${job.attempt}`);
+    logger.info("Send job", {service: "notification-sender", jobId: job.data.id, userId: job.data.userId, channel: job.data.channel, attempt: job.attemptsMade + 1})
 
     await sleep(500);
 
@@ -14,7 +16,7 @@ async function sendNotification(job) {
         throw new Error("Simulated notification send failure");
     }
 
-    console.log(`[SUCCESS] Job = ${job.jobId}`)
+    logger.info("Job success", {service: "notification-sender", jobId: job.data.id, userId: job.data.userId, channel: job.data.channel, attempt: job.attemptsMade + 1});
 
     return true
 }

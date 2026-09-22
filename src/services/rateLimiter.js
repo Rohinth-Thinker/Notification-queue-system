@@ -1,37 +1,56 @@
 
-const requests = new Map();
+const {redis} = require("../config/redis");
 
 const RATE_LIMIT = 5;
 const WINDOW_MS = 60 * 1000;
 
-function removeExpiredRequests(userId, now) {
-    const timestamps = requests.get(userId) || []
+const rateLimiterScript = `
+    local key = KEYS[1]
+    local now = tonumber(ARGV[1])
+    local window = tonumber(ARGV[2])
+    local limit = tonumber(ARGV[3])
 
-    const validTimestamps = timestamps.filter((timestamp) => now - timestamp < WINDOW_MS)
+    redis.call("ZREMRANGEBYSCORE", key, 0, now - window)
 
-    requests.set(userId, validTimestamps)
+    local count = redis.call("ZCARD", key)
 
-    return validTimestamps;
+    if count >= limit then
+        return 0
+    end
+
+    redis.call("ZADD", key, now, ARGV[4])
+    
+    redis.call("EXPIRE", key, 60)
+    
+    return 1
+`
+
+async function isAllowed(userId) {
+    const now = Date.now()
+    const key = `rate_limit${userId}`
+    const value = `${now} - ${Math.random()}`
+
+    const result = await redis.eval(rateLimiterScript, {
+        keys: [key],
+        arguments: [String(now), String(WINDOW_MS), String(RATE_LIMIT), value]
+    })
+
+    return result == 1
+
 }
 
-function isAllowed(userId) {
-    const now = Date.now()
-
-    const timestamps = removeExpiredRequests(userId, now)
-
-    if (timestamps.length >= RATE_LIMIT) return false
-
-    timestamps.push(now)
-
-    return true
+async function removeExpiredRequests(userId, now) {
+    const key = `rate_limit:${userId}`
+    await redis.zRemRangeByScore(key, 0, now - WINDOW_MS )
+    return key;
 }
 
-function getRemainingRequests(userId) {
+async function getRemainingRequests(userId) {
     const now = Date.now()
+    const key = await removeExpiredRequests(userId, now)
+    const count = await redis.zCard(key)
 
-    const timestamps = removeExpiredRequests(userId, now)
-
-    return Math.max(0, RATE_LIMIT - timestamps.length);
+    return Math.max(0, RATE_LIMIT - count);
 }
 
 module.exports = {

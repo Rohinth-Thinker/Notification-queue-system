@@ -1,42 +1,47 @@
 
 const crypto = require("crypto");
 
-const notificationStore = require("../store/notificationStore")
-const notificationQueue = require("../queue/notificationQueue")
+const { notificationQueue } = require("../queue/notificationQueue");
+const notificationRepository = require("../repositories/notificationRepository");
 
-function createNotificationJob({ userId, message, channel }) {
+async function createNotificationJob({ userId, message, channel }) {
 
     const job = {
         jobId: crypto.randomUUID(),
         userId,
         message,
         channel,
-        attempt: 0,
         createdAt: new Date().toISOString(),
     }
 
-    notificationStore.incrementQueued(userId);
-    notificationQueue.enqueue(job)
+    await notificationRepository.createNotificationWithOutbox(job);
+
+    // await notificationQueue.add("send-notification", job, {
+    //     attempts: 4,
+    //     backoff: {
+    //         type: "exponential",
+    //         delay: 1000,
+    //     },
+
+    //     removeOnComplete: true,
+    //     removeOnFail: false,
+    // })
 
     return job;
 
 }
 
 function getStatus(userId) {
-    return notificationStore.getStatus(userId);
+    return notificationRepository.getNotificationsByUser(userId);
 }
 
-function getAllStatus(userId) {
-    return notificationStore.getAllStatus();
-}
-
-function getQueueSize() {
-    return notificationQueue.getQueueSize();
+async function getQueueSize() {
+    const counts = await notificationQueue.getJobCounts("waiting", "active", "delayed")
+    return counts.waiting + counts.active + counts.delayed
 }
 
 module.exports = {
     createNotificationJob,
     getStatus,
-    getAllStatus,
     getQueueSize,
 }

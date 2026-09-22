@@ -13,7 +13,11 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bullmq": "^6.3.8",
     "express": "^5.2.1",
+    "ioredis": "^6.0.0",
+    "pg": "^8.23.0",
+    "redis": "^6.2.1",
     "zod": "^4.6.2"
   }
 }

@@ -29,3 +29,14 @@ coverage/
 # Runtime files
 *.pid
 *.seed
+
+# Build output
+dist/
+build/
+
+# Docker local files
+.docker/
+
+# Temporary files
+*.tmp
+*.temp
