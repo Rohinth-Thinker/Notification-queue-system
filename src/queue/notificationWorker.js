@@ -18,7 +18,7 @@ const notificationWorker = new Worker(
     },
     {
         connection,
-        concurrency: 1,
+        concurrency: 10,
     }
 )
 
