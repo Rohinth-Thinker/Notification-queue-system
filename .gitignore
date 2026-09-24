@@ -40,3 +40,8 @@ build/
 # Temporary files
 *.tmp
 *.temp
+
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
