@@ -1,4 +1,3 @@
-
 name: CI/CD
 
 on:
@@ -8,6 +7,15 @@ on:
   pull_request:
     branches:
       - main
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: eu-north-1
+  AWS_ACCOUNT_ID: "881490132448"
+  ECR_REGISTRY: "881490132448.dkr.ecr.eu-north-1.amazonaws.com"
 
 jobs:
   test:
@@ -31,22 +39,45 @@ jobs:
         run: npm test
 
   docker-build:
-    name: Build Docker Images
+    name: Build and Push Docker Images
     needs: test
+    if: github.event_name == 'push'
+
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build API image
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::881490132448:role/github-actions-notification-ecr
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push API image
         run: |
           docker build -t notification-api:${{ github.sha }} .
+          docker tag notification-api:${{ github.sha }} \
+            $ECR_REGISTRY/notification-api:${{ github.sha }}
+          docker push \
+            $ECR_REGISTRY/notification-api:${{ github.sha }}
 
-      - name: Build Notification Worker image
+      - name: Build and push Notification Worker image
         run: |
           docker build -t notification-worker:${{ github.sha }} .
+          docker tag notification-worker:${{ github.sha }} \
+            $ECR_REGISTRY/notification-worker:${{ github.sha }}
+          docker push \
+            $ECR_REGISTRY/notification-worker:${{ github.sha }}
 
-      - name: Build Outbox Worker image
+      - name: Build and push Outbox Worker image
         run: |
           docker build -t notification-outbox-worker:${{ github.sha }} .
+          docker tag notification-outbox-worker:${{ github.sha }} \
+            $ECR_REGISTRY/notification-outbox-worker:${{ github.sha }}
+          docker push \
+            $ECR_REGISTRY/notification-outbox-worker:${{ github.sha }}
