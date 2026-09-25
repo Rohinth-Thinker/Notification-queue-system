@@ -9,15 +9,15 @@ resource "aws_ecs_service" "api" {
 
   network_configuration {
     subnets = [
-      aws_subnet.private_a.id,
-      aws_subnet.private_b.id
+      aws_subnet.public_a.id,
+      aws_subnet.public_b.id
     ]
 
     security_groups = [
       aws_security_group.ecs.id
     ]
 
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -42,15 +42,15 @@ resource "aws_ecs_service" "notification_worker" {
 
   network_configuration {
     subnets = [
-      aws_subnet.private_a.id,
-      aws_subnet.private_b.id
+      aws_subnet.public_a.id,
+      aws_subnet.public_b.id
     ]
 
     security_groups = [
       aws_security_group.ecs.id
     ]
 
-    assign_public_ip = false
+    assign_public_ip = true
   }
 }
 
@@ -65,14 +65,14 @@ resource "aws_ecs_service" "outbox_worker" {
 
   network_configuration {
     subnets = [
-      aws_subnet.private_a.id,
-      aws_subnet.private_b.id
+      aws_subnet.public_a.id,
+      aws_subnet.public_b.id
     ]
 
     security_groups = [
       aws_security_group.ecs.id
     ]
 
-    assign_public_ip = false
+    assign_public_ip = true
   }
 }

@@ -16,17 +16,6 @@ async function createNotificationJob({ userId, message, channel }) {
 
     await notificationRepository.createNotificationWithOutbox(job);
 
-    // await notificationQueue.add("send-notification", job, {
-    //     attempts: 4,
-    //     backoff: {
-    //         type: "exponential",
-    //         delay: 1000,
-    //     },
-
-    //     removeOnComplete: true,
-    //     removeOnFail: false,
-    // })
-
     return job;
 
 }

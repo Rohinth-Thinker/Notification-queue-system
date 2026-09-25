@@ -29,7 +29,7 @@ resource "aws_ecs_task_definition" "api" {
         },
         {
           name  = "REDIS_HOST"
-          value = var.redis_host
+          value = aws_elasticache_replication_group.redis.primary_endpoint_address
         },
         {
           name  = "REDIS_PORT"
@@ -37,7 +37,7 @@ resource "aws_ecs_task_definition" "api" {
         },
         {
           name  = "POSTGRES_HOST"
-          value = var.postgres_host
+          value = aws_db_instance.postgres.address
         },
         {
           name  = "POSTGRES_PORT"
@@ -56,7 +56,7 @@ resource "aws_ecs_task_definition" "api" {
       secrets = [
         {
           name      = "POSTGRES_PASSWORD"
-          valueFrom = aws_secretsmanager_secret.postgres_credentials.arn
+          valueFrom = "${aws_secretsmanager_secret.postgres_credentials.arn}:password::"
         }
       ]
 

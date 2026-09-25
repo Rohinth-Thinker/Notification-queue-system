@@ -24,8 +24,10 @@ resource "aws_db_instance" "postgres" {
   skip_final_snapshot = true
   deletion_protection = false
 
-  db_name  = var.postgres_db
-  username = var.postgres_user
+  db_name             = var.postgres_db
+  username            = var.postgres_user
+  password_wo         = var.postgres_password
+  password_wo_version = 1
 
   db_subnet_group_name   = aws_db_subnet_group.postgres.name
   vpc_security_group_ids = [aws_security_group.database.id]

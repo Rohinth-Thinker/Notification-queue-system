@@ -81,3 +81,20 @@ jobs:
             $ECR_REGISTRY/notification-outbox-worker:${{ github.sha }}
           docker push \
             $ECR_REGISTRY/notification-outbox-worker:${{ github.sha }}
+
+      
+      # - name: Render API task definition
+      #   id: render-api
+      #   uses: aws-actions/amazon-ecs-render-task-definition@v1
+      #   with:
+      #     task-definition: ecs/api-task-definition.json
+      #     container-name: notification-api
+      #     image: ${{ env.ECR_REGISTRY }}/notification-api:${{ github.sha }}
+
+      # - name: Deploy API to ECS
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      #   with:
+      #     task-definition: ${{ steps.render-api.outputs.task-definition }}
+      #     service: notification-api
+      #     cluster: notification-cluster
+      #     wait-for-service-stability: true
